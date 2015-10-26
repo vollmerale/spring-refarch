@@ -4,11 +4,10 @@ import java.util.Properties;
 
 import javax.sql.DataSource;
 
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.env.Environment;
 import org.springframework.dao.annotation.PersistenceExceptionTranslationPostProcessor;
@@ -21,10 +20,10 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import com.zaxxer.hikari.HikariDataSource;
 
-@PropertySource({ "classpath:persistence.properties" })
 @Configuration
-@ComponentScan({ "de.vollmerale" })
 @EnableTransactionManagement
+@Profile("dev")
+@PropertySource("classpath:application.properties")
 public class HikariPersistenceConfig {
 
 	@Autowired
@@ -44,19 +43,11 @@ public class HikariPersistenceConfig {
 		
 		Properties jpaProperties = new Properties();
 
-		String prefix = System.getProperty("profile");
-		
-		if(StringUtils.isBlank(prefix)){
-			prefix = "local.";
-		}
-
-		jpaProperties.setProperty("hibernate.hbm2ddl.auto", this.getEnvironment().getProperty(prefix + "hibernate.hbm2ddl.auto"));
-		jpaProperties.setProperty("hibernate.dialect", this.getEnvironment().getProperty(prefix + "hibernate.dialect"));
-		jpaProperties.setProperty("hibernate.connection.driver_class", this.getEnvironment().getProperty(prefix + "hibernate.connection.driver_class"));
-		jpaProperties.setProperty("hibernate.format_sql", this.getEnvironment().getProperty(prefix + "hibernate.format_sql"));
-		jpaProperties.setProperty("hibernate.show_sql", this.getEnvironment().getProperty(prefix + "hibernate.show_sql"));
-		jpaProperties.setProperty("hibernate.connection.autoReconnect", "true");
-		jpaProperties.setProperty("hibernate.connection.autoReconnectForPools", "true");
+		jpaProperties.setProperty("hibernate.hbm2ddl.auto", this.getEnvironment().getProperty("hibernate.hbm2ddl.auto"));
+		jpaProperties.setProperty("hibernate.dialect", this.getEnvironment().getProperty("hibernate.dialect"));
+		jpaProperties.setProperty("hibernate.format_sql", this.getEnvironment().getProperty("hibernate.format_sql"));
+		jpaProperties.setProperty("hibernate.show_sql", this.getEnvironment().getProperty("hibernate.show_sql"));
+//		jpaProperties.setProperty("hibernate.connection.driver_class", this.getEnvironment().getProperty("hibernate.connection.driver_class"));
 		
 		sessionFactory.setJpaProperties(jpaProperties);
 
@@ -65,22 +56,16 @@ public class HikariPersistenceConfig {
 	
 	private DataSource dataSource() {
 		
-		String prefix = System.getProperty("profile");
-		
-		if(StringUtils.isBlank(prefix)){
-			prefix = "local.";
-		}
-		
         final HikariDataSource ds = new HikariDataSource();
         ds.setMaximumPoolSize(50);
-        ds.setDataSourceClassName("com.mysql.jdbc.jdbc2.optional.MysqlDataSource");
-        ds.addDataSourceProperty("url", this.getEnvironment().getProperty(prefix + "hibernate.connection.url"));
-        ds.addDataSourceProperty("user", this.getEnvironment().getProperty(prefix + "hibernate.connection.username"));
-        ds.addDataSourceProperty("password", this.getEnvironment().getProperty(prefix + "hibernate.connection.password"));
-        ds.addDataSourceProperty("cachePrepStmts", true);
-        ds.addDataSourceProperty("prepStmtCacheSize", 250);
-        ds.addDataSourceProperty("prepStmtCacheSqlLimit", 2048);
-        ds.addDataSourceProperty("useServerPrepStmts", true);
+        ds.setDataSourceClassName(environment.getProperty("hikari.ds.connection.data_source_class_name"));
+        ds.addDataSourceProperty("url", environment.getProperty("hikari.ds.connection.url"));
+        ds.addDataSourceProperty("user", this.getEnvironment().getProperty("hikari.ds.connection.username"));
+        ds.addDataSourceProperty("password", this.getEnvironment().getProperty("hikari.ds.connection.password"));
+        //ds.addDataSourceProperty("cachePrepStmts", true);
+        //ds.addDataSourceProperty("prepStmtCacheSize", 250);
+        //ds.addDataSourceProperty("prepStmtCacheSqlLimit", 2048);
+        //ds.addDataSourceProperty("useServerPrepStmts", true);
         return ds;
     }
 
